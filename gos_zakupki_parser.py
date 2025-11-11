@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 def get_purchases_selenium(
     fz="44",
-    max_pages=10,
+    max_pages=5,
     region=None,
     price_min=None,
     price_max=None,

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PurchaseBase(BaseModel):
@@ -18,5 +18,4 @@ class PurchaseCreate(PurchaseBase):
 class PurchaseResponse(PurchaseBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

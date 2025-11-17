@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
+from .models import Purchase
 
 
 def create_purchase(db: Session, data: dict):

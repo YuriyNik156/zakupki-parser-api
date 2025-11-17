@@ -99,13 +99,13 @@ def get_purchases_selenium(
                 status = status_el[0].text.strip() if status_el else "—"
 
                 purchases.append({
-                    "Номер закупки": number,
-                    "Заказчик": customer,
-                    "Предмет": subject,
-                    "Сумма": amount,
-                    "Даты": dates,
-                    "Статус": status,
-                    "Ссылка": link
+                    "number": number,
+                    "customer": customer,
+                    "subject": subject,
+                    "amount": amount,
+                    "dates": dates,
+                    "status": status,
+                    "link": link
                 })
             except Exception:
                 continue

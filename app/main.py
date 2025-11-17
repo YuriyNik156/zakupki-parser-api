@@ -12,4 +12,4 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 # Подключаем эндпоинты
-app.include_router(router)
+app.include_router(router, prefix="/api")

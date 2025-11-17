@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
+from . import models
 
 
-def create_purchase(db: Session, item: schemas.PurchaseCreate):
-    db_item = models.Purchase(**item.dict())
+def create_purchase(db: Session, item: dict):
+    db_item = models.Purchase(**item)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)

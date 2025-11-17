@@ -6,40 +6,44 @@ from app.api.endpoints import router
 from app.models import Base
 from app.deps import engine
 
+print("<<< MAIN.PY STARTED >>>")
+
 # -----------------------------------------------------
-# ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+# ЕДИНСТВЕННЫЙ APP
 # -----------------------------------------------------
 app = FastAPI(
     title="Zakupki Parser API",
     description="API для получения и сохранения данных о закупках",
 )
 
-# Создаём таблицы
+# Создаем таблицы
 Base.metadata.create_all(bind=engine)
 
-# Подключаем эндпоинты API
+print(">>> IMPORT router:", router)
+
+# Подключаем API маршруты
 app.include_router(router, prefix="/api")
 
 
 # -----------------------------------------------------
-# ЛОГИКА ПАРСЕРА (СТАРТ / СТОП)
+# ЛОГИКА СТАРТ/СТОП
 # -----------------------------------------------------
 stop_event = Event()
 parser_thread = None
 
 
 def run_parser():
-    """Фоновый поток, который запускает парсер."""
     from app.parser.gos_zakupki_parser import get_purchases_selenium
 
     while not stop_event.is_set():
         get_purchases_selenium()
-        # Если нужен интервал между циклами — добавь здесь time.sleep()
 
 
+# -----------------------------------------------------
+# ГЛАВНАЯ СТРАНИЦА (ИНТЕРФЕЙС)
+# -----------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def control_panel():
-    """Главная страница — панель управления."""
     return """
     <html>
     <head>
@@ -71,7 +75,6 @@ def control_panel():
 
 @app.get("/start")
 def start_parser():
-    """Запускает парсер в отдельном потоке."""
     global parser_thread
 
     if parser_thread and parser_thread.is_alive():
@@ -86,6 +89,5 @@ def start_parser():
 
 @app.get("/stop")
 def stop_parser():
-    """Останавливает парсер."""
     stop_event.set()
     return {"status": "парсер остановлен"}

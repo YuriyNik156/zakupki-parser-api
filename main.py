@@ -42,7 +42,6 @@ def run_parser():
 # -----------------------------------------------------
 # ГЛАВНАЯ СТРАНИЦА (ИНТЕРФЕЙС)
 # -----------------------------------------------------
-print(">>> ROUTE / REGISTERED")
 @app.get("/", response_class=HTMLResponse)
 def control_panel():
     return """
@@ -92,13 +91,3 @@ def start_parser():
 def stop_parser():
     stop_event.set()
     return {"status": "парсер остановлен"}
-
-@app.on_event("startup")
-def list_routes():
-    print(">>> ROUTES LOADED:")
-    for r in app.router.routes:
-        print(r.path)
-
-@app.get("/test")
-def test():
-    return {"ok": True}

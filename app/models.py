@@ -8,7 +8,7 @@ class Purchase(Base):
     __tablename__ = "purchases"
 
     id = Column(Integer, primary_key=True, index=True)
-    number = Column(String, index=True)
+    number = Column(String, unique=True, index=True, nullable=False)
     customer = Column(String)
     subject = Column(String)
     amount = Column(String)

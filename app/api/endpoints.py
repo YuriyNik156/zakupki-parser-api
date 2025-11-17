@@ -4,6 +4,7 @@ from app.deps import get_db
 from app.crud import create_purchase, get_purchases
 from app.parser.gos_zakupki_parser import get_purchases_selenium
 
+
 router = APIRouter()
 
 

@@ -2,13 +2,20 @@ from sqlalchemy.orm import Session
 from . import models
 
 
-def create_purchase(db: Session, item: dict):
-    db_item = models.Purchase(**item)
-    db.add(db_item)
+def create_purchase(db: Session, data: dict):
+    existing = get_purchase_by_number(db, data["number"])
+    if existing:
+        return existing  # возвращаем уже существующий объект
+
+    new_purchase = Purchase(**data)
+    db.add(new_purchase)
     db.commit()
-    db.refresh(db_item)
-    return db_item
+    db.refresh(new_purchase)
+    return new_purchase
 
 
 def get_purchases(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Purchase).offset(skip).limit(limit).all()
+    return db.query(Purchase).offset(skip).limit(limit).all()
+
+def get_purchase_by_number(db: Session, number: str):
+    return db.query(Purchase).filter(Purchase.number == number).first()

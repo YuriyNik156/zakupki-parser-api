@@ -34,9 +34,18 @@ parser_thread = None
 
 def run_parser():
     from app.parser.gos_zakupki_parser import get_purchases_selenium
-
+    from app.deps import get_db
+    from app.crud import create_purchase
+    db = next(get_db())  # получаем сессию SQLAlchemy вручную
     while not stop_event.is_set():
-        get_purchases_selenium()
+        try:
+            data = get_purchases_selenium()
+            print(f"Получено {len(data)} записей")
+            for item in data:
+                saved = create_purchase(db, item)
+                print(f"Сохранена запись: {saved.id}")
+        except Exception as e:
+            print("Ошибка в парсере:", e)
 
 
 # -----------------------------------------------------

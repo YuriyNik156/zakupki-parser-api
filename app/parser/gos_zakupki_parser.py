@@ -33,27 +33,41 @@ def get_purchases_selenium(
         date_from=None,
         date_to=None
 ):
-    """Универсальный парсер — работает в консоли и FastAPI."""
+    """Универсальный парсер — теперь корректно фильтрует по 44 и 223 ФЗ."""
 
     if fz not in ("44", "223"):
         raise ValueError("fz должно быть '44' или '223'")
 
-    base_url = "https://zakupki.gov.ru/epz/order/extendedsearch/results.html?searchString=&"
-    filters = [f"fz{fz}=on"]
+    base_url = (
+        "https://zakupki.gov.ru/epz/order/extendedsearch/results.html?"
+        "searchString=&morphology=on&sortBy=UPDATE_DATE&sortDirection=false"
+    )
 
+    filters = []
+
+    # корректная обработка ФЗ
+    if fz == "44":
+        filters.append("fz44=on")
+    elif fz == "223":
+        filters.append("fz223=on")
+
+    # остальные фильтры
     if region:
         filters.append(f"regions={region}")
+
     if price_min:
         filters.append(f"priceFrom={price_min}")
+
     if price_max:
         filters.append(f"priceTo={price_max}")
+
     if date_from:
         filters.append(f"publishDateFrom={date_from}")
+
     if date_to:
         filters.append(f"publishDateTo={date_to}")
 
-    url_base = base_url + "&".join(filters)
-
+    url_base = base_url + "&" + "&".join(filters)
     driver = create_driver()
     purchases = []
 
@@ -76,12 +90,19 @@ def get_purchases_selenium(
 
         for card in cards:
             try:
-                number_el = card.find_element(By.CSS_SELECTOR, ".registry-entry__header-mid__number a")
+                number_el = card.find_element(
+                    By.CSS_SELECTOR, ".registry-entry__header-mid__number a"
+                )
                 number = number_el.text.strip()
                 link = number_el.get_attribute("href")
 
-                customer = card.find_element(By.CSS_SELECTOR, ".registry-entry__body-href").text.strip()
-                subject = card.find_element(By.CSS_SELECTOR, ".registry-entry__body-value").text.strip()
+                customer = card.find_element(
+                    By.CSS_SELECTOR, ".registry-entry__body-href"
+                ).text.strip()
+
+                subject = card.find_element(
+                    By.CSS_SELECTOR, ".registry-entry__body-value"
+                ).text.strip()
 
                 amount_el = card.find_element(By.CSS_SELECTOR, ".price-block__value")
                 amount = amount_el.text.strip() if amount_el else "—"
@@ -89,7 +110,9 @@ def get_purchases_selenium(
                 date_blocks = card.find_elements(By.CSS_SELECTOR, ".data-block__value")
                 dates = ", ".join(d.text.strip() for d in date_blocks)
 
-                status_el = card.find_elements(By.CSS_SELECTOR, ".registry-entry__header-top__title")
+                status_el = card.find_elements(
+                    By.CSS_SELECTOR, ".registry-entry__header-top__title"
+                )
                 status = status_el[0].text.strip() if status_el else "—"
 
                 purchases.append({
@@ -108,29 +131,3 @@ def get_purchases_selenium(
 
     driver.quit()
     return purchases
-
-
-def save_to_excel(data, fz="44"):
-    df = pd.DataFrame(data)
-    filename = f"zakupki_{fz}.xlsx"
-    df.to_excel(filename, index=False)
-    print(f"💾 Сохранено {len(data)} записей в {filename}")
-
-
-# === CLI режим ===
-
-if __name__ == "__main__":
-    fz = "44"
-    data = get_purchases_selenium(
-        fz=fz,
-        max_pages=5,
-        region="5277340",
-        price_min=1000000,
-        price_max=10000000,
-        date_from="01.09.2025",
-        date_to="10.11.2025"
-    )
-
-    print(f"Собрано записей: {len(data)}")
-    if data:
-        save_to_excel(data, fz)

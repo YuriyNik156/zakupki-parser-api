@@ -144,9 +144,22 @@ def stop_parser():
 def export_excel():
     try:
         df = pd.read_sql(text("SELECT * FROM purchases"), con=engine)
+
+        # --- РУСИФИКАЦИЯ КОЛОНОК ---
+        df = df.rename(columns={
+            "number": "Номер закупки",
+            "customer": "Заказчик",
+            "subject": "Предмет закупки",
+            "amount": "Начальная цена",
+            "dates": "Даты",
+            "status": "Статус закупки",
+            "link": "Ссылка на закупку",
+        })
+
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="purchases")
+            df.to_excel(writer, index=False, sheet_name="Закупки")
+
         output.seek(0)
 
         headers = {
@@ -161,6 +174,7 @@ def export_excel():
     except Exception as e:
         print("Ошибка при экспорте в Excel:", repr(e))
         return PlainTextResponse(f"Ошибка при экспорте: {e}", status_code=500)
+
 
 
 @app.get("/settings", response_class=HTMLResponse)

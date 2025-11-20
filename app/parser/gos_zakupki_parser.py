@@ -124,6 +124,8 @@ def get_purchases_selenium(
                     "status": status,
                     "link": link,
                 })
+
+
             except Exception:
                 continue
 

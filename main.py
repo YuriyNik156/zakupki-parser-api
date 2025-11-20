@@ -50,36 +50,57 @@ parser_settings = {
 }
 
 
-def run_parser():
+def run_parser_once():
+    """Выполняет парсинг один раз и завершает работу."""
+    from sqlalchemy.orm import Session
+    from app.deps import SessionLocal
+    from app.models import Purchase
     from app.parser.gos_zakupki_parser import get_purchases_selenium
-    from app.deps import get_db
     from app.crud import create_purchase
 
-    db = next(get_db())  # получаем сессию SQLAlchemy вручную
+    db: Session = SessionLocal()
+    print("=== Запуск парсера: однократный режим ===")
+
     try:
-        while not stop_event.is_set():
-            try:
-                data = get_purchases_selenium(
-                    fz=parser_settings["fz"],
-                    max_pages=parser_settings["max_pages"],
-                    region=parser_settings["region"],
-                    price_min=parser_settings["price_min"],
-                    price_max=parser_settings["price_max"],
-                    date_from=parser_settings["date_from"],
-                    date_to=parser_settings["date_to"]
-                )
-                print(f"Получено {len(data)} записей")
-                for item in data:
-                    saved = create_purchase(db, item)
-                    print(f"Сохранена запись: {saved.id}")
-            except Exception as e:
-                # Логируем ошибку парсинга, но не убиваем поток
-                print("Ошибка в парсере:", repr(e))
+        if stop_event.is_set():
+            print("Остановлено до начала работы")
+            return
+
+        # --- Очищаем таблицу перед новым парсингом ---
+        db.query(Purchase).delete()
+        db.commit()
+        print("Таблица очищена")
+
+        # --- Выполняем ОДИН вызов ---
+        data = get_purchases_selenium(
+            fz=parser_settings["fz"],
+            max_pages=parser_settings["max_pages"],
+            region=parser_settings["region"],
+            price_min=parser_settings["price_min"],
+            price_max=parser_settings["price_max"],
+            date_from=parser_settings["date_from"],
+            date_to=parser_settings["date_to"]
+        )
+
+        print(f"Получено {len(data)} записей")
+
+        # --- Сохраняем ---
+        for item in data:
+            if stop_event.is_set():
+                print("Парсер остановлен во время сохранения данных")
+                return
+            saved = create_purchase(db, item)
+            print(f"Сохранено: {saved.id}")
+
+        print("=== Парсинг завершён успешно ===")
+
+    except Exception as e:
+        print("Ошибка парсинга:", repr(e))
+
     finally:
-        try:
-            db.close()
-        except Exception:
-            pass
+        db.close()
+        stop_event.clear()  # сбрасываем флаг для следующего запуска
+        print("Парсер: ресурсы освобождены")
 
 
 # -----------------------------------------------------
@@ -125,16 +146,16 @@ def start_parser():
         return {"status": "уже работает"}
 
     stop_event.clear()
-    parser_thread = Thread(target=run_parser, daemon=True)
+    parser_thread = Thread(target=run_parser_once, daemon=True)
     parser_thread.start()
 
-    return {"status": "парсер запущен"}
+    return {"status": "парсер запущен (однократный запуск)"}
 
 
 @app.get("/stop")
 def stop_parser():
     stop_event.set()
-    return {"status": "парсер остановлен"}
+    return {"status": "сигнал на остановку отправлен"}
 
 
 # -----------------------------------------------------

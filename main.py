@@ -46,8 +46,36 @@ parser_settings = {
     "price_max": None,
     "date_from": None,
     "date_to": None,
-    "max_pages": 3
+    "max_pages": 3,
+    "category": None
 }
+
+# -----------------------------------------------------
+# Категории закупок и ключевые слова
+# -----------------------------------------------------
+CATEGORY_KEYWORDS = {
+    "техника": ["компьютер", "ноутбук", "оргтех", "принтер", "сканер", "мфу"],
+    "лекарства": ["лекарств", "препарат", "фармацевт"],
+    "услуги": ["услуги", "перевозк", "дезинфекц", "обслуживан"],
+    "мебель": ["мебел", "шкаф", "стол", "тумб"],
+    "технические материалы": ["масло", "смазк", "техническ"],
+    "медицинские изделия": ["расходн", "медицинск", "издел"],
+    "оборудование": ["систем", "станок", "комплекс", "видеонаблюдени"],
+    "строительные работы": ["ремонт", "строит"],
+    "софт": ["программн", "программное обеспечение", " software ", "софт", "лиценз", "приложен", "информационн", " ПО "],
+}
+
+
+
+def filter_by_category(item: dict, category: str) -> bool:
+    """Фильтрует закупку по категории."""
+    if not category:
+        return True  # фильтр отключён
+
+    subject = item.get("subject", "").lower()
+    words = CATEGORY_KEYWORDS.get(category.lower(), [])
+
+    return any(word in subject for word in words)
 
 
 def run_parser_once():
@@ -83,6 +111,13 @@ def run_parser_once():
         )
 
         print(f"Получено {len(data)} записей")
+
+        # --- Применяем фильтр по категории ---
+        category = parser_settings.get("category")
+        if category:
+            before = len(data)
+            data = [d for d in data if filter_by_category(d, category)]
+            print(f"Фильтр '{category}': {before} → {len(data)} записей")
 
         # --- Сохраняем ---
         for item in data:
@@ -206,31 +241,48 @@ def settings_page():
         <h2>Настройки парсинга</h2>
         <form method="post" action="/settings/save">
 
-            <label>Закон (44 или 223):</label><br>
-            <input name="fz" value="{parser_settings['fz']}"><br><br>
+    <label>Закон (44 или 223):</label><br>
+    <input name="fz" value="{parser_settings['fz']}"><br><br>
 
-            <label>Регион:</label><br>
-            <input name="region" value="{parser_settings['region'] or ''}"><br><br>
+    <label>Регион:</label><br>
+    <input name="region" value="{parser_settings['region'] or ''}"><br><br>
 
-            <label>Цена от:</label><br>
-            <input name="price_min" value="{parser_settings['price_min'] or ''}"><br><br>
+    <label>Цена от:</label><br>
+    <input name="price_min" value="{parser_settings['price_min'] or ''}"><br><br>
 
-            <label>Цена до:</label><br>
-            <input name="price_max" value="{parser_settings['price_max'] or ''}"><br><br>
+    <label>Цена до:</label><br>
+    <input name="price_max" value="{parser_settings['price_max'] or ''}"><br><br>
 
-            <label>Дата с:</label><br>
-            <input name="date_from" value="{parser_settings['date_from'] or ''}"><br><br>
+    <label>Дата с:</label><br>
+    <input name="date_from" value="{parser_settings['date_from'] or ''}"><br><br>
 
-            <label>Дата по:</label><br>
-            <input name="date_to" value="{parser_settings['date_to'] or ''}"><br><br>
+    <label>Дата по:</label><br>
+    <input name="date_to" value="{parser_settings['date_to'] or ''}"><br><br>
 
-            <label>Максимум страниц:</label><br>
-            <input name="max_pages" value="{parser_settings['max_pages']}"><br><br>
+    <label>Максимум страниц:</label><br>
+    <input name="max_pages" value="{parser_settings['max_pages']}"><br><br>
 
-            <button type="submit">Сохранить</button>
-        </form>
+    <label>Категория закупок:</label><br>
+    <select name="category">
+        <option value="">— без фильтра —</option>
+        <option value="техника">Техника</option>
+        <option value="лекарства">Лекарства</option>
+        <option value="услуги">Услуги</option>
+        <option value="мебель">Мебель</option>
+        <option value="технические материалы">Технические материалы</option>
+        <option value="медицинские изделия">Медицинские изделия</option>
+        <option value="оборудование">Оборудование / видеонаблюдение</option>
+        <option value="строительные работы">Строительные работы</option>
+        <option value="софт">Программное обеспечение</option>
+    </select>
+    <br><br>
 
-        <br><button onclick="location.href='/'">Назад</button>
+    <button type="submit">Сохранить</button>
+</form>
+
+<br><button onclick="location.href='/'">Назад</button>
+
+
     </body>
     </html>
     """
@@ -251,7 +303,8 @@ def save_settings(
     price_max: str = Form(None),
     date_from: str = Form(None),
     date_to: str = Form(None),
-    max_pages: int = Form(3)
+    max_pages: int = Form(3),
+    category: str = Form(None)
 ):
     parser_settings["fz"] = fz
     parser_settings["region"] = region or None
@@ -260,6 +313,7 @@ def save_settings(
     parser_settings["date_from"] = parse_date(date_from)
     parser_settings["date_to"] = parse_date(date_to)
     parser_settings["max_pages"] = max_pages
+    parser_settings["category"] = category or None
 
     return HTMLResponse("""
     <html>

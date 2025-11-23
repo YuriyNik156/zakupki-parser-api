@@ -104,11 +104,15 @@ def settings_page():
         <label>Макс страниц:</label>
         <input name="max_pages" value="{parser_settings['max_pages']}"><br><br>
 
-        <label>Категория:</label>
+        <label>Категория (выбор):</label>
         <select name="category">
             <option value="">(не выбрано)</option>
             {category_options}
         </select>
+        <br><br>
+        
+        <label>Категория (ввести вручную):</label>
+        <input name="category_custom" value="{parser_settings.get('category_custom') or ''}">
         <br><br>
 
         <button>Сохранить</button>
@@ -124,13 +128,17 @@ def save_settings(
     price_min: str = Form(None),
     price_max: str = Form(None),
     max_pages: int = Form(3),
-    category: str = Form(None)
+    category: str = Form(None),
+    category_custom: str = Form(None)
 ):
     parser_settings["fz"] = fz
     parser_settings["region"] = region or None
     parser_settings["price_min"] = int(price_min) if price_min else None
     parser_settings["price_max"] = int(price_max) if price_max else None
     parser_settings["max_pages"] = max_pages
+
     parser_settings["category"] = category or None
+    parser_settings["category_custom"] = category_custom or None
 
     return HTMLResponse("<h3>Сохранено!</h3><a href='/'>Назад</a>")
+

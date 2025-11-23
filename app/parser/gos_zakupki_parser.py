@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from urllib.parse import quote
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -33,7 +34,7 @@ def get_purchases_selenium(
         date_from=None,
         date_to=None
 ):
-    """Универсальный парсер — теперь корректно фильтрует по 44 и 223 ФЗ."""
+    """Парсер с корректной подстановкой фильтров в URL."""
 
     if fz not in ("44", "223"):
         raise ValueError("fz должно быть '44' или '223'")
@@ -45,22 +46,26 @@ def get_purchases_selenium(
 
     filters = []
 
-    # корректная обработка ФЗ
+    # ФЗ
     if fz == "44":
         filters.append("fz44=on")
-    elif fz == "223":
+    else:
         filters.append("fz223=on")
 
-    # остальные фильтры
+    # Фильтр по региону (обязательно quote!)
     if region:
-        filters.append(f"regions={region}")
+        region_encoded = quote(region)
+        filters.append(f"regions={region_encoded}")
 
-    if price_min:
+    # Цена от
+    if price_min is not None:
         filters.append(f"priceFrom={price_min}")
 
-    if price_max:
+    # Цена до
+    if price_max is not None:
         filters.append(f"priceTo={price_max}")
 
+    # Даты
     if date_from:
         filters.append(f"publishDateFrom={date_from}")
 
@@ -68,6 +73,7 @@ def get_purchases_selenium(
         filters.append(f"publishDateTo={date_to}")
 
     url_base = base_url + "&" + "&".join(filters)
+
     driver = create_driver()
     purchases = []
 
@@ -125,8 +131,7 @@ def get_purchases_selenium(
                     "link": link,
                 })
 
-
-            except Exception:
+            except:
                 continue
 
         time.sleep(2)

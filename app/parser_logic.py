@@ -36,12 +36,20 @@ CATEGORY_KEYWORDS = {
 }
 
 
-def filter_by_category(item: dict, category: str) -> bool:
-    if not category:
-        return True
+def filter_by_category(item: dict, category: str, custom_keywords: list = None) -> bool:
     subject = item.get("subject", "").lower()
-    words = CATEGORY_KEYWORDS.get(category.lower(), [])
-    return any(word in subject for word in words)
+
+    # Если пользователь ввёл свои ключевые слова
+    if custom_keywords:
+        return any(word in subject for word in custom_keywords)
+
+    # Если выбрана категория из списка
+    if category:
+        words = CATEGORY_KEYWORDS.get(category.lower(), [])
+        return any(word in subject for word in words)
+
+    return True
+
 
 
 def run_parser_once():
@@ -74,10 +82,21 @@ def run_parser_once():
 
         # Фильтр категории
         cat = parser_settings.get("category")
-        if cat:
+        custom = parser_settings.get("category_custom")
+
+        if cat or custom:
             before = len(data)
-            data = [d for d in data if filter_by_category(d, cat)]
-            print(f"Фильтр '{cat}': {before} → {len(data)}")
+            data = [
+                d for d in data
+                if filter_by_category(
+                    d,
+                    cat,
+                    custom_keywords=(
+                        custom.lower().split() if custom else None
+                    )
+                )
+            ]
+            print(f"Категоризация: {before} → {len(data)}")
 
         # Сохранение
         for item in data:
